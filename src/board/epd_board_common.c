@@ -1,17 +1,15 @@
 #include "esp_adc/adc_oneshot.h"
-#include "esp_adc/adc_cali.h"
-#include "esp_adc/adc_cali_scheme.h"
 #include "epd_board.h"
 #include "esp_log.h"
 
 static const adc_channel_t channel = ADC_CHANNEL_7;
 static adc_oneshot_unit_handle_t adc1_handle;
-static adc_cali_handle_t adc1_cali_handle;
 
 #define NUMBER_OF_SAMPLES 100
+// Approximate mV per ADC step at 12-bit, 6dB attenuation (~0-1.75V range)
+#define ADC_MV_PER_STEP (1750.0 / 4095.0)
 
 void epd_board_temperature_init_v2() {
-    // Configure ADC oneshot
     adc_oneshot_unit_init_cfg_t init_config = {
         .unit_id = ADC_UNIT_1,
     };
@@ -22,19 +20,7 @@ void epd_board_temperature_init_v2() {
         .atten = ADC_ATTEN_DB_6,
     };
     adc_oneshot_config_channel(adc1_handle, channel, &chan_config);
-
-    // Configure calibration
-    adc_cali_curve_fitting_config_t cali_config = {
-        .unit_id = ADC_UNIT_1,
-        .atten = ADC_ATTEN_DB_6,
-        .bitwidth = ADC_BITWIDTH_12,
-    };
-    esp_err_t ret = adc_cali_create_scheme_curve_fitting(&cali_config, &adc1_cali_handle);
-    if (ret == ESP_OK) {
-        ESP_LOGI("epd_temperature", "Calibration scheme: curve fitting\n");
-    } else {
-        ESP_LOGW("epd_temperature", "Calibration not available\n");
-    }
+    ESP_LOGI("epd_temperature", "ADC initialized for temperature sensing\n");
 }
 
 float epd_board_ambient_temperature_v2() {
@@ -45,8 +31,7 @@ float epd_board_ambient_temperature_v2() {
         value += raw;
     }
     value /= NUMBER_OF_SAMPLES;
-
-    int voltage = 0;
-    adc_cali_raw_to_voltage(adc1_cali_handle, value, &voltage);
-    return ((float)voltage - 500.0) / 10.0;
+    // Approximate voltage conversion without calibration
+    float voltage = value * ADC_MV_PER_STEP;
+    return (voltage - 500.0) / 10.0;
 }
