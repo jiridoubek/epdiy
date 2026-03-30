@@ -45,6 +45,12 @@
 #include <soc/lcd_periph.h>
 #include <soc/rmt_struct.h>
 
+// __DECLARE_RCC_ATOMIC_ENV is used by lcd_ll.h macros as (void)__DECLARE_RCC_ATOMIC_ENV;
+// It's not defined when building as a PlatformIO library outside the ESP-IDF CMake system.
+#ifndef __DECLARE_RCC_ATOMIC_ENV
+#define __DECLARE_RCC_ATOMIC_ENV 0
+#endif
+
 #define TAG "epdiy"
 
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 3, 2)
